@@ -94,7 +94,7 @@ async function load (ctx: PluginContext, file: string, serve: boolean, symbolIdG
 		const resolved = await ctx.resolve(ref, file)
 		if (!resolved?.id) return null
 
-		const url = new URL(resolved.id, 'file:///')
+		const url = new URL(`file:///${resolved.id}`)
 		if (isFile) url.searchParams.set('file', 'true')
 		else if (serve) url.searchParams.set('sprite', 'inline')
 
@@ -121,10 +121,10 @@ function generateFilename (template: AssetName, file: string, raw: string) {
 			: ''
 
 		return template
-			.replace(/\[name\]/g, name)
-			.replace(/\[extname\]/g, ext)
-			.replace(/\[ext\]/g, ext.slice(1))
-			.replace(/\[hash\]/g, hash)
+			.replace(/\[name]/g, name)
+			.replace(/\[extname]/g, ext)
+			.replace(/\[ext]/g, ext.slice(1))
+			.replace(/\[hash]/g, hash)
 	}
 
 	return template({
@@ -183,7 +183,7 @@ function magicalSvgPlugin (config: MagicalSvgConfig = {}): Plugin {
 			return resolve(id, importer)
 		},
 		async load (id) {
-			const url = new URL(id, 'file:///')
+			const url = new URL(`file:///${id}`)
 			if (!url.pathname.endsWith('.svg')) return null
 
 			const filePath = fileURLToPath(url)
@@ -214,7 +214,7 @@ function magicalSvgPlugin (config: MagicalSvgConfig = {}): Plugin {
 			return `${imp}\nexport default ${JSON.stringify(`/${file}`)}`
 		},
 		async transform (code, id) {
-			const url = new URL(id, 'file:///')
+			const url = new URL(`file:///${id}`)
 			if (!url.pathname.endsWith('.svg')) return null
 			const assetId = url.searchParams.has('file') ? id : url.searchParams.get('sprite') ?? 'sprite'
 
@@ -293,7 +293,7 @@ function magicalSvgPlugin (config: MagicalSvgConfig = {}): Plugin {
 				const asset = assets.get(assetId)!
 				await transformRefs(asset.xml.svg, async (ref, isFile) => {
 					if (!isFile) {
-						const url = new URL(ref, 'file:///')
+						const url = new URL(`file:///${ref}`)
 						const file = files.get(url.searchParams.get('sprite') || 'sprite')
 						if (!file) return null
 
