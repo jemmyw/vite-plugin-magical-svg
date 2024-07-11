@@ -1,11 +1,10 @@
 import { createElementBlock, createElementVNode, openBlock } from "vue";
 
-/*@__NO_SIDE_EFFECTS__*/
-export const createSvg = (viewBox, symbol) => {
-	// <svg viewBox="{{viewBox}}"><use href="{{symbol}}" /></svg>
-	const _hoisted_1 = { viewBox };
-	const _hoisted_2 = createElementVNode("use", { href: symbol }, null, -1);
-	const _hoisted_3 = [_hoisted_2];
+export var createSvg = /*@__NO_SIDE_EFFECTS__*/ (viewBox, width, height, symbol) => {
+	// <svg viewBox="{{viewBox}}" width="{{width}}" height="{{height}}"><use href="{{symbol}}" /></svg>
+	let _hoisted_1 = { viewBox, width, height };
+	let _hoisted_2 = createElementVNode("use", { href: symbol }, null, -1);
+	let _hoisted_3 = [_hoisted_2];
 
 	return {
 		render: (_ctx, _cache) => {
@@ -14,10 +13,9 @@ export const createSvg = (viewBox, symbol) => {
 	};
 };
 
-/*@__NO_SIDE_EFFECTS__*/
-export const createSvgDEV = (viewBox, xml) => {
-	// <svg viewBox="{{viewBox}}" innerHTML="{{xml}}"></svg>
-	const _hoisted_1 = { viewBox, innerHTML: xml };
+export var createSvgDEV = /*@__NO_SIDE_EFFECTS__*/ (viewBox, width, height, xml) => {
+	// <svg viewBox="{{viewBox}}" width="{{width}}" height="{{height}}" innerHTML="{{xml}}"></svg>
+	let _hoisted_1 = { viewBox, width, height, innerHTML: xml };
 
 	return {
 		render: (_ctx, _cache) => {

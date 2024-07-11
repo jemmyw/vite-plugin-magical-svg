@@ -1,22 +1,20 @@
-import { template, spread } from "solid-js/web";
+import { template, spread } from "../test.nogit/node_modules/solid-js/web/dist/web";
 
-/*@__NO_SIDE_EFFECTS__*/
-export const createIcon = (viewBox, symbol) => {
-	const tmpl = template(`<svg viewBox="${viewBox}"><use href="${symbol}">`);
+export var createSvg = /*@__NO_SIDE_EFFECTS__*/ (viewBox, width, height, symbol) => {
+	let tmpl = template(`<svg ${viewBox?`viewBox="${viewBox}"`:''} ${width?`width="${width}"`:''} ${height?`height="${height}"`:''}><use href="${symbol}">`);
 
 	return (props) => {
-		var el = tmpl();
+		let el = tmpl();
 		spread(el, props, true, true);
 		return el;
 	};
 };
 
-/*@__NO_SIDE_EFFECTS__*/
-export const createIconDEV = (viewBox, xml) => {
-	const tmpl = template(`<svg viewBox="${viewBox}">${xml}`);
+export var createSvgDEV = /*@__NO_SIDE_EFFECTS__*/ (viewBox, width, height, xml) => {
+	let tmpl = template(`<svg ${viewBox?`viewBox="${viewBox}`:''} ${width?`width="${width}"`:''} ${height?`height="${height}"`:''}>${xml}`);
 
 	return (props) => {
-		var el = tmpl();
+		let el = tmpl();
 		spread(el, props, true, true);
 		return el;
 	};

@@ -1,20 +1,20 @@
 import { createElement, forwardRef } from "react";
 
-/*@__NO_SIDE_EFFECTS__*/
-export const createSvg = (viewBox, symbol) => {
-	const node = createElement("use", { href: symbol });
+export var createSvg = /*@__NO_SIDE_EFFECTS__*/ (viewBox, width, height, symbol) => {
+	let node = createElement("use", { href: symbol });
 
 	return forwardRef((props, ref) => {
-		return createElement("svg", { ref, viewBox, ...props }, node);
+		return createElement("svg", { ref, viewBox, width, height, ...props }, node);
 	});
 };
 
-/*@__NO_SIDE_EFFECTS__*/
-export const createSvgDEV = (viewBox, xml) => {
+export var createSvgDEV = /*@__NO_SIDE_EFFECTS__*/ (viewBox, width, height, xml) => {
 	return forwardRef((props, ref) => {
 		return createElement("svg", {
 			ref,
 			viewBox,
+			width,
+			height,
 			...props,
 			dangerouslySetInnerHTML: { __html: xml },
 		});

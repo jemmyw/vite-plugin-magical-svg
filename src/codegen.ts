@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) Cynthia Rey, All rights reserved.
+ * Copyright (c) Cynthia Rey et al., All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,8 @@
 
 import { Builder } from 'xml2js'
 
+type XmlValue = string | undefined
+
 function renderHtml (xml: any, useSymbol: boolean) {
 	const symbol = new Builder({ headless: true, renderOpts: { pretty: false } }).buildObject({ symbol: xml.svg })
 	return useSymbol
@@ -47,14 +49,24 @@ export type SupportedTarget =
 export function generateDev (target: SupportedTarget, xml: any): string {
 	return `
 		import { createSvgDEV } from 'vite-plugin-magical-svg/runtime/${target}.js';
-		export default createSvgDEV('${xml.svg.$.viewBox}', ${renderHtml(xml, true)});
+		export default createSvgDEV(
+			'${xml.svg.$.viewBox || ''}',
+			'${xml.svg.$.width || ''}',
+			'${xml.svg.$.height || ''}',
+			${renderHtml(xml, true)}
+		);
 	`
 }
 
-export function generateProd (target: SupportedTarget, viewBox: string, symbol: string): string {
+export function generateProd (target: SupportedTarget, viewBox: XmlValue, width: XmlValue, height: XmlValue, symbol: string): string {
 	return `
 		import { createSvg } from 'vite-plugin-magical-svg/runtime/${target}.js';
-		export default createSvg('${viewBox}', ${symbol});
+		export default createSvg(
+			'${viewBox || ''}',
+			'${width || ''}',
+			'${height || ''}',
+			${symbol}
+		);
 	`
 }
 
@@ -70,5 +82,3 @@ export function inlineSymbol (xml: any): string {
 		})();
 	`
 }
-
-export default codegen

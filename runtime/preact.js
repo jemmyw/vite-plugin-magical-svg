@@ -1,21 +1,21 @@
 import { h } from "preact";
 import { forwardRef } from "preact/compat";
 
-/*@__NO_SIDE_EFFECTS__*/
-export const createSvg = (viewBox, symbol) => {
-	const node = h("use", { href: symbol });
+export var createSvg = /*@__NO_SIDE_EFFECTS__*/ (viewBox, width, height, symbol) => {
+	let node = h("use", { href: symbol });
 
 	return forwardRef((props, ref) => {
-		return h("svg", { ref, viewBox, ...props }, node);
+		return h("svg", { ref, viewBox, width, height, ...props }, node);
 	});
 };
 
-/*@__NO_SIDE_EFFECTS__*/
-export const createSvgDEV = (viewBox, xml) => {
+export var createSvgDEV = /*@__NO_SIDE_EFFECTS__*/ (viewBox, width, height, xml) => {
 	return forwardRef((props, ref) => {
 		return h("svg", {
 			ref,
 			viewBox,
+			width,
+			height,
 			...props,
 			dangerouslySetInnerHTML: { __html: xml },
 		});

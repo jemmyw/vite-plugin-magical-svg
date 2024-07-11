@@ -4,6 +4,7 @@
 
 An all-in-one [Vite](https://vitejs.dev/) plugin that magically makes working with SVGs and bundling them a breeze.
 
+## Backstory
 Inspired by a [tweet](https://twitter.com/_developit/status/1382838799420514317) from Preact's creator Jason Miller,
 I've been looking at plugins that would let me work with SVGs, as I myself did the error of embedding SVGs as React
 components. Shame!
@@ -12,13 +13,13 @@ What I wanted was a plugin that would let me import SVGs, and make a sprite of s
 can use in `<use href='???'/>`. And I couldn't find any decent plugin that makes working with them easy. They all had
 a problem that made using them a pain, or outright impractical. Here's a list of the problems I encountered:
 
- - References in SVG files are never processed. `<image href='...'/>` would never get processed and the referenced asset is ignored.
- - The generated sprite include ALL icons, even unused ones. Just picking the right icons from a pack isn't an option.
- - There are no options to output to a separate file and reference it. Inlining is apparently the only way.
- - Selectively tell to not process a specific SVG isn't possible (e.g.: A logo, or SVGs that break when encapsulated in a symbol).
- - You can't make different sprites, it's only all-in-one.
+- References in SVG files are never processed. `<image href='...'/>` would never get processed and the referenced asset is ignored.
+- The generated sprite include ALL icons, even unused ones. Just picking the right icons from a pack isn't an option.
+- There are no options to output to a separate file and reference it. Inlining is apparently the only way.
+- Selectively tell to not process a specific SVG isn't possible (e.g.: A logo, or SVGs that break when encapsulated in a symbol).
+- You can't make different sprites, it's only all-in-one.
 
-So I decided to make my own tool to solve all this problems. Introducing: the Magical SVG plugin. 🪄
+So I decided to make my own tool to solve all these problems. Introducing: the Magical SVG plugin. 🪄
 
 ## Install
 ```
@@ -34,37 +35,56 @@ import { defineConfig } from 'vite'
 import magicalSvg from 'vite-plugin-magical-svg'
 
 export default defineConfig({
-  plugins: [
-    magicalSvg({
-      // By default, the output will be a dom element (the <svg> you can use inside the webpage).
-      // You can also change the output to react (or preact) to get a component you can use.
-      target: 'preact',
-      // By default, the svgs are optimized with svgo. You can disable this by setting this to false.
-      svgo: false
-    })
-  ]
+	plugins: [
+		magicalSvg({
+			// By default, the output will be a dom element (the <svg> you can use inside the webpage).
+			// You can also change the output to react (or any supported target) to get a component you can use.
+			target: 'preact',
+
+			// By default, the svgs are optimized with svgo. You can disable this by setting this to false.
+			svgo: false,
+		
+			// By default, width and height set on SVGs are not preserved.
+			// Set to true to preserve `width` and `height` on the generated SVG.
+			preserveWidthHeight: false,
+
+			// *Experimental* - replace all instances of `fill="..."` and `stroke="..."` by currentColor.
+			// Useful for importing icons with hardcoded colors without modifying them.
+			// Disabled by default.
+			forceCurrentColor: true,
+
+			// *Experimental* - if a SVG comes with `width` and `height` set but no `viewBox`,
+			// assume the viewbox is `0 0 {width} {height}` and add it to the SVG.
+			// Disabled by default.
+			restoreMissingViewBox: true,
+		})
+	]
 })
 ```
 
 #### Targets
- - `dom` (default): exports a function you can call (takes no arguments) and returns a DOM element.
- - `react`: exports a functional React component (wrapped in `forwardRef`)
- - `preact`: exports a functional Preact component (wrapped in `forwardRef`)
+- `dom` (default): exports a function you can call (takes no arguments) and returns a DOM element.
+- `react`: exports a functional React component (classic runtime; wrapped in `forwardRef`)
+- `react-jsx`: exports a functional React component (automatic runtime; wrapped in `forwardRef`)
+- `preact`: exports a functional Preact component (classic runtime; wrapped in `forwardRef`)
+- `preact-jsx`: exports a functional Preact component (automatic runtime; wrapped in `forwardRef`)
+- `vue`: exports a Vue component (as if it was a `.vue` file)
+- `solid`: exports a Solid component
 
 ### Use in code
 ```js
 import MySvg from './assets/icon.svg' // Basic import, as a sprite
 import MySvg from './assets/icon.svg?sprite=owo' // Named sprites
 import MySvg from './assets/icon.svg?sprite=inline' // Special sprite, inlined in the HTML document
-import fileUrl from './assets/icon.svg' // Works like .png and other file imports
+import fileUrl from './assets/icon.svg?file' // Works like .png and other file imports
 ```
 
 ### SVG processing
 ```xml
 <svg viewBox='0 0 250 250'>
-  <image href='./assets/image.png'> <!-- Image will be imported, bundled, and the href will be replaced -->
-  <image href='./assets/icon.svg'> <!-- SVG will be imported as a file (implicit ?file) -->
-  <use href='./assets/icon.svg'> <!-- SVG will be imported and added to the sprite -->
+	<image href='./assets/image.png' /> <!-- Image will be imported, bundled, and the href will be replaced -->
+	<image href='./assets/icon.svg' /> <!-- SVG will be imported as a file (implicit ?file) -->
+	<use href='./assets/icon.svg' /> <!-- SVG will be imported and added to the sprite -->
 </svg>
 ```
 

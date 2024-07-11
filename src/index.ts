@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) Cynthia Rey, All rights reserved.
+ * Copyright (c) Cynthia Rey et al., All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,11 @@ type SymbolIdGenerator = (file: string, raw: string) => string | null | void
 export type MagicalSvgConfig = {
 	target?: SupportedTarget,
 	symbolId?: SymbolIdGenerator,
-	svgo?: boolean
+	svgo?: boolean,
+
+	preserveWidthHeight?: boolean
+	forceCurrentColor?: boolean
+	restoreMissingViewBox?: boolean
 }
 
 type SvgAsset = { sources: string[], xml: any }
@@ -58,8 +62,12 @@ function traverseSvg (xml: any, handler: (tag: string, xml: any) => Promise<void
 
 	for (const tag in xml) {
 		if (tag in xml && tag !== '$') {
-			for (const element of xml[tag]) {
-				promises.push(handler(tag, element), traverseSvg(element, handler))
+			if (Array.isArray(xml[tag])) {
+				for (const element of xml[tag]) {
+					promises.push(handler(tag, element), traverseSvg(element, handler))
+				}
+			} else {
+				promises.push(handler(tag, xml[tag]), traverseSvg(xml[tag], handler))
 			}
 		}
 	}
@@ -81,6 +89,13 @@ function hashSymbols (xml: any) {
 		if (tag === 'use' && element.$?.href) {
 			element.$.href = `#${createHash('sha256').update(element.$.href).digest('hex').slice(0, 8)}`
 		}
+	})
+}
+
+function forceCurrentColor (xml: any) {
+	return traverseSvg(xml, (_, element) => {
+		if ('fill' in element.$ && element.$.fill !== 'none') element.$.fill = 'currentColor'
+		if ('stroke' in element.$ && element.$.stroke !== 'none') element.$.stroke = 'currentColor'
 	})
 }
 
@@ -106,8 +121,6 @@ async function load (ctx: PluginContext, file: string, serve: boolean, symbolIdG
 	if (typeof xml.svg !== 'object') xml.svg = { _: xml.svg }
 	xml.svg.$ = xml.svg.$ ?? {}
 	xml.svg.$.id = symbolIdGen?.(file, raw) || createHash('sha256').update(raw).digest('hex').slice(0, 8);
-	delete xml.svg.$.width
-	delete xml.svg.$.height
 
 	return [ raw, xml, imports ]
 }
@@ -142,7 +155,8 @@ function magicalSvgPlugin (config: MagicalSvgConfig = {}): Plugin {
 
 	const assets = new Map<string, SvgAsset>()
 
-	const viewBoxes = new Map<string, string>()
+	type ViewBoxInfo = { viewBox: string, width: string, height: string }
+	const viewBoxes = new Map<string, ViewBoxInfo>()
 	const symbolIds = new Map<string, string>()
 
 	const files = new Map<string, string>()
@@ -188,7 +202,23 @@ function magicalSvgPlugin (config: MagicalSvgConfig = {}): Plugin {
 
 			const filePath = fileURLToPath(url)
 			const [ raw, xml, imports ] = await load(this, filePath, serve, config.symbolId)
-			viewBoxes.set(id, xml.svg.$.viewBox)
+
+			// Add viewbox if missing
+			if (!xml.svg.$.viewBox && xml.svg.$.width && xml.svg.$.height && config.restoreMissingViewBox) {
+				xml.svg.$.viewBox = `0 0 ${xml.svg.$.width} ${xml.svg.$.height}`
+			}
+
+			// Transform fill and stroke if configured
+			if (config.forceCurrentColor) {
+				await forceCurrentColor(xml)
+			}
+
+			viewBoxes.set(id, {
+				viewBox: xml.svg.$.viewBox,
+				width: xml.svg.$.width,
+				height: xml.svg.$.height,
+			})
+
 			if (url.searchParams.has('file') || serve) {
 				assets.set(id, { sources: [], xml: xml })
 			} else {
@@ -237,7 +267,17 @@ function magicalSvgPlugin (config: MagicalSvgConfig = {}): Plugin {
 				if (assetId === 'inline') {
 					asset.xml.svg.$.id = createHash('sha256').update(id).digest('hex').slice(0, 8)
 					return {
-						code: [ preamble, generateProd(target, asset.xml.svg.$.viewBox, `'#${asset.xml.svg.$.id}'`), inlineSymbol(asset.xml) ].join('\n'),
+						code: [
+							preamble,
+							generateProd(
+								target,
+								asset.xml.svg.$.viewBox,
+								config.preserveWidthHeight ? asset.xml.svg.$.width : void 0,
+								config.preserveWidthHeight ? asset.xml.svg.$.height : void 0,
+								`'#${asset.xml.svg.$.id}'`
+							),
+							inlineSymbol(asset.xml)
+						].join('\n'),
 						map: { mappings: '' },
 					}
 				}
@@ -250,8 +290,18 @@ function magicalSvgPlugin (config: MagicalSvgConfig = {}): Plugin {
 
 			const symbolId = symbolIds.get(id)!
 			if (assetId === 'inline') {
+				const vb = viewBoxes.get(id)!
 				return {
-					code: [ preamble, generateProd(target, viewBoxes.get(id)!, `'#${symbolId}'`) ].join('\n'),
+					code: [
+						preamble,
+						generateProd(
+							target,
+							vb.viewBox,
+							config.preserveWidthHeight ? vb.width : void 0,
+							config.preserveWidthHeight ? vb.height : void 0,
+							`'#${symbolId}'`
+						)
+					].join('\n'),
 					map: { mappings: '' },
 				}
 			}
@@ -259,8 +309,19 @@ function magicalSvgPlugin (config: MagicalSvgConfig = {}): Plugin {
 			sprites.set(symbolId, assetId)
 			const asset = assets.get(assetId)!
 			files.set(assetId, generateFilename(fileName, `${assetId}.svg`, asset.sources.sort().join('')))
+
+			const vb = viewBoxes.get(id)!
 			return {
-				code: [ preamble, generateProd(target, viewBoxes.get(id)!, `__MAGICAL_SVG_SPRITE__${symbolId}__`) ].join('\n'),
+				code: [
+					preamble,
+					generateProd(
+						target,
+						vb.viewBox,
+						config.preserveWidthHeight ? vb.width : void 0,
+						config.preserveWidthHeight ? vb.height : void 0,
+						`__MAGICAL_SVG_SPRITE__${symbolId}__`
+					)
+				].join('\n'),
 				map: { mappings: '' },
 			}
 		},
