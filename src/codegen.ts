@@ -35,76 +35,27 @@ function renderHtml (xml: any, useSymbol: boolean) {
 		: JSON.stringify(symbol)
 }
 
-const codegen = {
-	dom: {
-		dev: (xml: any): string => `
-				export default function () {
-					const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-					svg.setAttribute('viewBox', '${xml.svg.$.viewBox}')
-					svg.innerHTML = ${renderHtml(xml, true)}
-					return svg
-				}
-			`,
-		prod: (viewBox: string, symbol: string): string => `
-				export default function () {
-					const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-					const use = document.createElementNS('http://www.w3.org/2000/svg', 'use')
-					svg.setAttribute('viewBox', '${viewBox}')
-					use.setAttribute('href', ${symbol})
-					svg.appendChild(use)
-					return svg
-				}
-			`
-	},
-	react: {
-		dev: (xml: any): string => `
-				import { createElement, forwardRef } from 'react';
-				export default forwardRef((props, ref) => createElement('svg', { ...props, ref, viewBox: '${xml.svg.$.viewBox}', dangerouslySetInnerHTML: { __html: ${renderHtml(xml, true)} } }));
-			`,
-		prod: (viewBox: string, symbol: string): string => `
-				import { createElement, forwardRef } from 'react';
-				export default /*@__PURE__*/ forwardRef((props, ref) => createElement('svg', { ...props, ref, viewBox: '${viewBox}' }, createElement('use', { href: ${symbol} })));
-			`
-	},
-	preact: {
-		dev: (xml: any): string => `
-				import { h } from 'preact';
-				import { forwardRef } from 'preact/compat';
-				export default forwardRef((props, ref) => h('svg', { ...props, ref, viewBox: '${xml.svg.$.viewBox}', dangerouslySetInnerHTML: { __html: ${renderHtml(xml, true)} } }));
-			`,
-		prod: (viewBox: string, symbol: string): string => `
-				import { h } from 'preact';
-				import { forwardRef } from 'preact/compat';
-				export default /*@__PURE__*/ forwardRef((props, ref) => h('svg', { ...props, ref, viewBox: '${viewBox}' }, h('use', { href: ${symbol} })));
-			`
-	},
-	vue: {
-		dev: (xml: any): string => `
-			import { createElementVNode, mergeProps, openBlock, createElementBlock } from 'vue';
+export type SupportedTarget =
+	| 'dom'
+	| 'react'
+	| 'react-jsx'
+	| 'preact'
+	| 'preact-jsx'
+	| 'vue'
+	| 'solid'
 
-			export default {
-				render: function (ctx) {
-					return (
-						openBlock(),
-						createElementBlock('svg', mergeProps({ 'view-box': '${xml.svg.$.viewBox}' }, ctx.$props, { innerHTML: ${renderHtml(xml, true)} }), null, 16)
-					)
-				} 
-			}
-		`,
-		prod: (viewBox: string, symbol: string): string => `
-			import { createElementVNode, mergeProps, openBlock, createElementBlock } from 'vue';
+export function generateDev (target: SupportedTarget, xml: any): string {
+	return `
+		import { createSvgDEV } from 'vite-plugin-magical-svg/runtime/${target}.js';
+		export default createSvgDEV('${xml.svg.$.viewBox}', ${renderHtml(xml, true)});
+	`
+}
 
-			const hoisted_use = /*@__PURE__*/ createElementVNode("use", { href: ${symbol} }, null, -1)
-			export default {
-				render: function (ctx) {
-					return (
-						openBlock(),
-						createElementBlock('svg', mergeProps({ 'view-box': '${viewBox}' }, ctx.$props), [ hoisted_use ], 16)
-					)
-				} 
-			}
-		`
-	},
+export function generateProd (target: SupportedTarget, viewBox: string, symbol: string): string {
+	return `
+		import { createSvg } from 'vite-plugin-magical-svg/runtime/${target}.js';
+		export default createSvg('${viewBox}', ${symbol});
+	`
 }
 
 export function inlineSymbol (xml: any): string {
