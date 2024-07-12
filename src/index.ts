@@ -55,6 +55,7 @@ export type MagicalSvgConfig = {
 type SvgAsset = { sources: string[], xml: any }
 type AssetName = NonNullable<OutputOptions['assetFileNames']>
 
+let ROOT = '/'
 const ASSET_RE = /__MAGICAL_SVG_SPRITE__([0-9a-f]{8})__/g
 
 function traverseSvg (xml: any, handler: (tag: string, xml: any) => Promise<void> | void): Promise<any> {
@@ -96,16 +97,37 @@ function hashSymbols (xml: any) {
 function setFillStrokeColor (value: true | string, xml: any) {
 	const color = value === true ? 'currentColor' : value
 	return traverseSvg(xml, (_, element) => {
+		if (!element.$) return
+
 		if ('fill' in element.$ && element.$.fill !== 'none') element.$.fill = color
 		if ('stroke' in element.$ && element.$.stroke !== 'none') element.$.stroke = color
 	})
 }
 
 async function load (ctx: PluginContext, file: string, serve: boolean, symbolIdGen?: SymbolIdGenerator): Promise<[ string, any, string[] ]> {
+	const fileFriendlyName = relative(ROOT, file)
+
 	const imports: string[] = []
 	const raw = await readFile(file, 'utf8')
-	const xml = await parseXml(raw)
-	if (!('svg' in xml)) throw new Error('invalid svg: top level xml element isn\'t an svg')
+	let xml
+	try {
+		xml = await parseXml(raw)
+	} catch (e) {
+		const msg = e instanceof Error ? e.message : e?.toString()
+		ctx.error(`Could not load SVG: invalid XML (${msg}) (in ${fileFriendlyName})`)
+	}
+
+	if (!xml) {
+		ctx.error(`Could not load SVG: empty file (in ${fileFriendlyName})`)
+	}
+
+	if (!('svg' in xml)) {
+		ctx.error(`Could not load SVG: Top-level XML element isn't \`svg\` (in ${fileFriendlyName})`)
+	}
+
+	if (!xml.svg) {
+		ctx.warn(`${fileFriendlyName} is an empty SVG.`)
+	}
 
 	await transformRefs(xml.svg, async (ref, isFile) => {
 		const resolved = await ctx.resolve(ref, file)
@@ -168,6 +190,7 @@ function magicalSvgPlugin (config: MagicalSvgConfig = {}): Plugin {
 		name: 'vite-plugin-magical-svg',
 		enforce: 'pre',
 		configResolved (cfg) {
+			ROOT = cfg.root ?? ROOT
 			base = cfg.base ?? base
 			sourcemap = !!cfg.build.sourcemap
 			const { output } = cfg.build.rollupOptions
