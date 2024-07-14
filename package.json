@@ -1,19 +1,19 @@
 {
 	"name": "vite-plugin-magical-svg",
+	"license": "BSD-3-Clause",
 	"version": "1.3.0",
 	"description": "An all-in-one Vite plugin that magically makes working with SVGs and bundling them a breeze",
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/cyyynthia/vite-plugin-magical-svg.git"
-	},
-	"author": "Cynthia <cynthia@cynthia.dev>",
-	"license": "BSD-3-Clause",
+	"author": "Cynthia <cynthia@cynthia.dev> (https://cynthia.dev)",
+	"repository": "github:cyyynthia/vite-plugin-magical-svg",
+	"bugs": "https://github.com/cyyynthia/vite-plugin-magical-svg/issues",
+	"funding": "https://github.com/sponsors/cyyynthia",
 	"keywords": [
 		"vite-plugin",
 		"svg"
 	],
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"packageManager": "pnpm@9.4.0",
 	"scripts": {
 		"prepack": "tsc",
 		"build": "tsc"
@@ -24,7 +24,7 @@
 		"xml2js": "^0.6.2"
 	},
 	"devDependencies": {
-		"@types/node": "^20.14.9",
+		"@types/node": "^20.14.10",
 		"@types/xml2js": "^0.4.14",
 		"rollup": "^2.79.1",
 		"typescript": "^5.5.3",
