@@ -50,9 +50,9 @@ export function generateDev (target: SupportedTarget, xml: any): string {
 	return `
 		import { createSvgDEV } from 'vite-plugin-magical-svg/runtime/${target}.js';
 		export default createSvgDEV(
-			'${xml.svg.$.viewBox || ''}',
-			'${xml.svg.$.width || ''}',
-			'${xml.svg.$.height || ''}',
+			'${xml.svg.$.viewBox || ''}' || void 0,
+			'${xml.svg.$.width || ''}' || void 0,
+			'${xml.svg.$.height || ''}' || void 0,
 			${renderHtml(xml, true)}
 		);
 	`
@@ -62,9 +62,9 @@ export function generateProd (target: SupportedTarget, viewBox: XmlValue, width:
 	return `
 		import { createSvg } from 'vite-plugin-magical-svg/runtime/${target}.js';
 		export default createSvg(
-			'${viewBox || ''}',
-			'${width || ''}',
-			'${height || ''}',
+			'${viewBox || ''}' || void 0,
+			'${width || ''}' || void 0,
+			'${height || ''}' || void 0,
 			${symbol}
 		);
 	`
